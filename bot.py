@@ -44,7 +44,7 @@ def get_sticker_options(sticker_id):
     return message
 
 
-updater = Updater('662555454:AAHwZmdek2Isuyxot-sTFgZ7IuWD4Teqt-0')
+updater = Updater(open("key.txt", 'r').readline())
 dispatcher = updater.dispatcher
 
 dispatcher.add_handler(CommandHandler('hello', hello))
