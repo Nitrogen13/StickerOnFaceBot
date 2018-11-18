@@ -1,9 +1,9 @@
 import io
+import json
 import time
 
 from PIL import Image
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-from telegram import File
 
 import image_processing
 import s3_helper
@@ -72,6 +72,56 @@ def on_message_picture(bot, update):
     bot.sendMessage(chat_id=chat_id, text="Got pic with id{}".format(photo_id), reply_to_message_id=message_id)
 
 
+def on_message_picture_beard(bot, update):
+    print("Got pic for beard")
+    chat_id = update.message.chat_id
+    message_id = update.message.message_id
+    photo = update.message.photo
+    photo_id = photo[len(photo) - 1].file_id
+    file = bot.get_file(photo_id)
+    with io.BytesIO() as image_bytes:
+        file.download(out=image_bytes)
+        image_bytes.seek(0)
+        s3_helper.save_unprocessed_image(image_bytes.getvalue(), chat_id)
+    print("Photo successfully saved!")
+
+    print("Analyzing beard")
+    with io.BytesIO() as mask_bytes:
+        try:
+            file.download(out=mask_bytes)
+            mask = Image.open(mask_bytes)
+            print("Photo with beard successfully downloaded!")
+        except Exception as e:
+            print(e)
+            return
+
+        source = s3_helper.get_last_saved_source(chat_id)
+        if not source:
+            print("Source image to memefy not found!")
+            return  # Handle source not found
+
+        faces = s3_helper.get_faces_on_last_source(chat_id)
+        if not faces:
+            print("Faces to memefy not found!")
+            return  # Handle faces not found
+
+    if faces[0].get('Beard').get('Value'):
+        bot.sendMessage(chat_id=chat_id, text='I\'m %0.02f percent sure, that you have great beard!' % float(
+            faces[0].get('Beard').get('Confidence')),
+                        reply_to_message_id=message_id)
+    else:
+        bot.sendMessage(chat_id=chat_id, text='Sad, that you have no beard((99(',
+                        reply_to_message_id=message_id)
+
+    if faces[0].get('Mustache').get('Value'):
+        bot.sendMessage(chat_id=chat_id, text='I\'m %0.02f percent sure, that you have great mustache!' % float(
+            faces[0].get('Mustache').get('Confidence')),
+                        reply_to_message_id=message_id)
+    else:
+        bot.sendMessage(chat_id=chat_id, text='Sad, that you have no mustache((99(',
+                        reply_to_message_id=message_id)
+
+
 def get_sticker_options(sticker_id):
     """
     Finds information about the input sticker.
@@ -88,6 +138,7 @@ dispatcher = updater.dispatcher
 dispatcher.add_handler(CommandHandler('hello', hello))
 dispatcher.add_handler(CommandHandler('start', start))
 
+# dispatcher.add_handler(MessageHandler(Filters.photo, on_message_picture_beard))
 dispatcher.add_handler(MessageHandler(Filters.photo, on_message_picture))
 dispatcher.add_handler(MessageHandler(Filters.sticker, on_message_sticker))
 

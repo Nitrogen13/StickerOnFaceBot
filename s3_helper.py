@@ -50,8 +50,8 @@ def get_last_saved_source(chat_id):
     try:
         unprocessed_bucket.download_fileobj(get_source_image_s3_name(chat_id), data)
         return Image.open(data)
-    except ClientError:
-        print("Download error: ")
+    except Exception as e:
+        print("Download error: %s", e)
         return None
 
 
@@ -61,7 +61,8 @@ def get_faces_on_last_source(chat_id):
             'Bucket': UNPROCESSED_IMAGES_BUCKET_NAME,
             'Name': get_source_image_s3_name(chat_id),
         }
-    })
+    },
+        Attributes=['ALL'])
 
     if 'FaceDetails' in resp:
         return resp['FaceDetails']
