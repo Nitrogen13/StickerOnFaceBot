@@ -50,7 +50,7 @@ def on_message_sticker(bot, update):
             processed.save(image_bytes, format='JPEG')
             url = s3_helper.save_processed_image(image_bytes.getvalue(), chat_id)
 
-    url += "?t=%s" % (round(time.time()))
+    url += "?t=%s" % (int(time.time()))
     print(url)
 
     bot.sendMessage(chat_id=chat_id, text=get_sticker_options(sticker_id), reply_to_message_id=message_id)
