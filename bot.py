@@ -1,6 +1,11 @@
+import io
+
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram import File
 import boto3
+
+import image_processing
+import s3_helper
 
 
 def hello(bot, update):
@@ -18,10 +23,31 @@ def on_message_sticker(bot, update):
     sticker_id = update.message.sticker.file_id
     file = bot.get_file(sticker_id)
     print(file)
-    file.download()
+    mask_bytes = io.BytesIO()
+    file.download(out=mask_bytes)
+
+    source = s3_helper.get_last_saved_source(chat_id)
+    if not source:
+        print("Source image to memefy not found!")
+        return  # Handle source not found
+
+    faces = s3_helper.get_faces_on_last_source(chat_id)
+    if not faces:
+        print("Faces to memefy not found!")
+        return  # Handle faces not found
+
+    # mEmEs TiMe
+    processed = image_processing.memefy(source, mask_bytes.getvalue(), faces)
+
+    # Save result to s3
+    image_bytes = io.BytesIO()
+    processed.save(image_bytes, format='JPEG')
+    url = s3_helper.save_processed_image(image_bytes.getvalue(), chat_id)
+    print(url)
+
     print("Sticker successfully downloaded!")
     bot.sendMessage(chat_id=chat_id, text=get_sticker_options(sticker_id), reply_to_message_id=message_id)
-    bot.sendMessage("Chat id = {}".format(chat_id))
+    bot.send_photo(chat_id=chat_id, photo=url)
 
 
 def on_message_picture(bot, update):
@@ -29,12 +55,13 @@ def on_message_picture(bot, update):
     chat_id = update.message.chat_id
     message_id = update.message.message_id
     photo = update.message.photo
-    photo_id = photo[len(photo)-1].file_id
+    photo_id = photo[len(photo) - 1].file_id
     file = bot.get_file(photo_id)
-    file.download()
-    print("Photo successfully downloaded!")
+    image_bytes = io.BytesIO()
+    file.download(out=image_bytes)
+    s3_helper.save_unprocessed_image(image_bytes.getvalue(), chat_id)
+    print("Photo successfully saved!")
     bot.sendMessage(chat_id=chat_id, text="Got pic with id{}".format(photo_id), reply_to_message_id=message_id)
-    bot.send_photo(chat_id=chat_id, photo='https://cdn.cnn.com/cnnnext/dam/assets/181113054953-01-detective-pikachu-film-pokemon-grab-1113-exlarge-169.jpg')
 
 
 def get_sticker_options(sticker_id):
@@ -58,7 +85,3 @@ dispatcher.add_handler(MessageHandler(Filters.sticker, on_message_sticker))
 
 updater.start_polling()
 updater.idle()
-
-
-
-

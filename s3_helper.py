@@ -51,11 +51,11 @@ def get_last_saved_source(chat_id):
         return None
 
 
-def get_faces(image_s3_name):
+def get_faces_on_last_source(chat_id):
     resp = rekognition.detect_faces(Image={
         'S3Object': {
             'Bucket': UNPROCESSED_IMAGES_BUCKET_NAME,
-            'Name': image_s3_name,
+            'Name': get_source_image_s3_name(chat_id),
         }
     })
 
@@ -80,7 +80,7 @@ if __name__ == '__main__':
         print("Source image to memefy not found!")
         exit()  # Handle source not found
 
-    faces = get_faces(get_source_image_s3_name(chat_id))
+    faces = get_faces_on_last_source(get_source_image_s3_name(chat_id))
     if not faces:
         print("Faces to memefy not found!")
         exit()  # Handle faces not found
@@ -90,6 +90,6 @@ if __name__ == '__main__':
 
     # Save result to s3
     image_bytes = io.BytesIO()
-    source.save(image_bytes, format='JPEG')
+    processed.save(image_bytes, format='JPEG')
     url = save_processed_image(image_bytes.getvalue(), chat_id)
     print(url)
