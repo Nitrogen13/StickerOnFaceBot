@@ -50,6 +50,7 @@ def get_last_saved_source(chat_id):
     except ClientError:
         return None
 
+
 def get_faces(image_s3_name):
     resp = rekognition.detect_faces(Image={
         'S3Object': {
@@ -68,11 +69,11 @@ if __name__ == '__main__':
     chat_id = "69420"
 
     # When you get a source image:
-    source = open("Vanya.jpg", 'rb')  # Get source image from user
+    source = open("test_img/Vanya.jpg", 'rb')  # Get source image from user
     save_unprocessed_image(source, chat_id)
 
     # When you get a sticker
-    mask = Image.open("pika.png")  # Get mask from image or from sticker
+    mask = Image.open("test_img/pika.png")  # Get mask from image or from sticker
 
     source = get_last_saved_source(chat_id)
     if not source:
