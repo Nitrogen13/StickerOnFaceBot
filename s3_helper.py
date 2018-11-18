@@ -31,7 +31,10 @@ def get_processed_image_s3_name(chat_id):
 
 def save_unprocessed_image(image, chat_id):
     print("Upload source image...")
-    unprocessed_bucket.put_object(Body=image, Key=get_source_image_s3_name(chat_id))
+    try:
+        unprocessed_bucket.put_object(Body=image, Key=get_source_image_s3_name(chat_id))
+    except Exception as e:
+        print(e)
 
 
 def save_processed_image(image, chat_id):

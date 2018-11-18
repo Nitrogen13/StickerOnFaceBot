@@ -1,5 +1,6 @@
 import io
 
+from PIL import Image
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram import File
 
@@ -22,7 +23,11 @@ def on_message_sticker(bot, update):
     sticker_id = update.message.sticker.file_id
     file = bot.get_file(sticker_id)
     with io.BytesIO() as mask_bytes:
-        file.download(out=mask_bytes)
+        try:
+            file.download(out=mask_bytes)
+            mask = Image.open(mask_bytes)
+        except Exception as e:
+            print(e)
 
         source = s3_helper.get_last_saved_source(chat_id)
         if not source:
@@ -35,7 +40,7 @@ def on_message_sticker(bot, update):
             return  # Handle faces not found
 
         # mEmEs TiMe
-        processed = image_processing.memefy(source, mask_bytes.getvalue(), faces)
+        processed = image_processing.memefy(source, mask, faces)
 
         # Save result to s3
         with io.BytesIO() as image_bytes:
@@ -57,6 +62,7 @@ def on_message_picture(bot, update):
     file = bot.get_file(photo_id)
     with io.BytesIO() as image_bytes:
         file.download(out=image_bytes)
+        image_bytes.seek(0)
         s3_helper.save_unprocessed_image(image_bytes.getvalue(), chat_id)
     print("Photo successfully saved!")
     bot.sendMessage(chat_id=chat_id, text="Got pic with id{}".format(photo_id), reply_to_message_id=message_id)
