@@ -55,7 +55,6 @@ def on_message_picture(bot, update):
     photo = update.message.photo
     photo_id = photo[len(photo) - 1].file_id
     file = bot.get_file(photo_id)
-
     with io.BytesIO() as image_bytes:
         file.download(out=image_bytes)
         s3_helper.save_unprocessed_image(image_bytes.getvalue(), chat_id)

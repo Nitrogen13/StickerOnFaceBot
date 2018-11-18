@@ -22,11 +22,11 @@ processed_bucket = s3.Bucket(PROCESSED_IMAGES_BUCKET_NAME)
 
 
 def get_source_image_s3_name(chat_id):
-    return chat_id + SOURCE_IMAGE_NAME_SUFFIX
+    return str(chat_id) + SOURCE_IMAGE_NAME_SUFFIX
 
 
 def get_processed_image_s3_name(chat_id):
-    return chat_id + PROCESSED_IMAGE_NAME_SUFFIX
+    return str(chat_id) + PROCESSED_IMAGE_NAME_SUFFIX
 
 
 def save_unprocessed_image(image, chat_id):
