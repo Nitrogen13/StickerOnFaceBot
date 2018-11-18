@@ -1,4 +1,5 @@
 import io
+import time
 
 from PIL import Image
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
@@ -50,7 +51,7 @@ def on_message_sticker(bot, update):
 
     print("Sticker successfully downloaded!")
     bot.sendMessage(chat_id=chat_id, text=get_sticker_options(sticker_id), reply_to_message_id=message_id)
-    bot.send_photo(chat_id=chat_id, photo=url)
+    bot.send_photo(chat_id=chat_id, photo=(url + "?t=%s" % (round(time.time()))))
 
 
 def on_message_picture(bot, update):
