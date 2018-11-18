@@ -33,8 +33,4 @@ def memefy(source, mask, faces):
         build_masked_image(source, mask, boxes)
     else:
         return None
-
-    image_bytes = io.BytesIO()
-    source.save(image_bytes, format='JPEG')
-
-    return image_bytes.getvalue()
+    return source

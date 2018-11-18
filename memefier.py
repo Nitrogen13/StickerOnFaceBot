@@ -3,6 +3,7 @@ import io
 import boto3
 
 from PIL import Image
+from botocore.exceptions import ClientError
 
 import image_processing
 
@@ -43,9 +44,11 @@ def save_processed_image(image, chat_id):
 def get_last_saved_source(chat_id):
     print("Downloading source image...")
     data = io.BytesIO()
-    unprocessed_bucket.download_fileobj(get_source_image_s3_name(chat_id), data)
-    return Image.open(data)
-
+    try:
+        unprocessed_bucket.download_fileobj(get_source_image_s3_name(chat_id), data)
+        return Image.open(data)
+    except ClientError:
+        return None
 
 def get_faces(image_s3_name):
     resp = rekognition.detect_faces(Image={
@@ -73,14 +76,19 @@ if __name__ == '__main__':
 
     source = get_last_saved_source(chat_id)
     if not source:
-        # Handle source not found
-        pass
+        print("Source image to memefy not found!")
+        exit()  # Handle source not found
 
     faces = get_faces(get_source_image_s3_name(chat_id))
     if not faces:
-        # Handle faces not found
-        pass
+        print("Faces to memefy not found!")
+        exit()  # Handle faces not found
 
+    # mEmEs TiMe
     processed = image_processing.memefy(source, mask, faces)
-    url = save_processed_image(processed, chat_id)
+
+    # Save result to s3
+    image_bytes = io.BytesIO()
+    source.save(image_bytes, format='JPEG')
+    url = save_processed_image(image_bytes.getvalue(), chat_id)
     print(url)
