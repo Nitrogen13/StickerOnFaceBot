@@ -51,6 +51,7 @@ def get_last_saved_source(chat_id):
         unprocessed_bucket.download_fileobj(get_source_image_s3_name(chat_id), data)
         return Image.open(data)
     except ClientError:
+        print("Download error: ")
         return None
 
 

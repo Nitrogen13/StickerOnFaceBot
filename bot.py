@@ -27,8 +27,10 @@ def on_message_sticker(bot, update):
         try:
             file.download(out=mask_bytes)
             mask = Image.open(mask_bytes)
+            print("Sticker successfully downloaded!")
         except Exception as e:
             print(e)
+            return
 
         source = s3_helper.get_last_saved_source(chat_id)
         if not source:
@@ -47,11 +49,12 @@ def on_message_sticker(bot, update):
         with io.BytesIO() as image_bytes:
             processed.save(image_bytes, format='JPEG')
             url = s3_helper.save_processed_image(image_bytes.getvalue(), chat_id)
+
+    url += "?t=%s" % (round(time.time()))
     print(url)
 
-    print("Sticker successfully downloaded!")
     bot.sendMessage(chat_id=chat_id, text=get_sticker_options(sticker_id), reply_to_message_id=message_id)
-    bot.send_photo(chat_id=chat_id, photo=(url + "?t=%s" % (round(time.time()))))
+    bot.send_photo(chat_id=chat_id, photo=url)
 
 
 def on_message_picture(bot, update):
