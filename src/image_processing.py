@@ -55,6 +55,5 @@ if __name__ == '__main__':
               'Quality': {'Brightness': 80.83344268798828, 'Sharpness': 95.54405975341797},
               'Confidence': 99.99983215332031}]
 
-
     res = memefy(Image.open(src_bytes), mask, faces)
     res.save("test.jpg")

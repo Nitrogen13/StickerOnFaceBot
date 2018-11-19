@@ -3,10 +3,10 @@ import io
 import boto3
 
 from PIL import Image
-from botocore.exceptions import ClientError
 
-import image_processing
+from src import image_processing
 
+# FIXME move all infrastructure to single region
 REGION_NAME = "eu-west-1"
 UNPROCESSED_IMAGES_BUCKET_NAME = "ninjazz.img.unprocessed"
 PROCESSED_IMAGES_BUCKET_NAME = "ninjazz.images.processed"
@@ -45,6 +45,7 @@ def save_processed_image(image, chat_id):
 
 
 def get_last_saved_source(chat_id):
+    # FIXME permission denied error
     print("Downloading source image...")
     data = io.BytesIO()
     try:
