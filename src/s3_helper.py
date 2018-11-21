@@ -6,7 +6,6 @@ from PIL import Image
 
 from src import image_processing
 
-# FIXME move all infrastructure to single region
 REGION_NAME = "eu-west-1"
 UNPROCESSED_IMAGES_BUCKET_NAME = "ninjazz.img.unprocessed"
 PROCESSED_IMAGES_BUCKET_NAME = "ninjazz.images.processed"
@@ -45,11 +44,12 @@ def save_processed_image(image, chat_id):
 
 
 def get_last_saved_source(chat_id):
-    # FIXME permission denied error
     print("Downloading source image...")
     data = io.BytesIO()
     try:
         unprocessed_bucket.download_fileobj(get_source_image_s3_name(chat_id), data)
+        print("Source image downloaded.")
+        print("Image URL:  {}".format(get_source_image_s3_name(chat_id)))
         return Image.open(data)
     except Exception as e:
         print("Download error: %s", e)
@@ -57,6 +57,7 @@ def get_last_saved_source(chat_id):
 
 
 def get_faces_on_last_source(chat_id):
+    print("Detecting faces...")
     resp = rekognition.detect_faces(Image={
         'S3Object': {
             'Bucket': UNPROCESSED_IMAGES_BUCKET_NAME,
@@ -66,8 +67,10 @@ def get_faces_on_last_source(chat_id):
         Attributes=['ALL'])
 
     if 'FaceDetails' in resp:
+        print("Faces detected.")
         return resp['FaceDetails']
     else:
+        print("There is no faces")
         return None
 
 

@@ -1,6 +1,5 @@
 from PIL import Image
 
-
 class FaceBox:
     def __init__(self, face, source_width, source_height):
         self.left = int(face['BoundingBox']['Left'] * source_width)
