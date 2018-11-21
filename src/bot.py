@@ -42,13 +42,9 @@ def meme_bot_factory(token):
     """
     bot = telebot.TeleBot(token, threaded=False)
 
-    @bot.message_handler(commands=["hello"])
-    def hello(message):
-        bot.send_message(chat_id=message.chat.id, text='Hello {}'.format(message.from_user.first_name))
-
     @bot.message_handler(commands=["start"])
     def start(message):
-        bot.send_message(chat_id=message.chat.id, text="Send me some sticker or pic!")
+        bot.send_message(chat_id=message.chat.id, text='Hello {}! Send me some picture, that contains faces and I will memify it!'.format(message.from_user.first_name))
 
     @bot.message_handler(content_types=["photo"])
     def on_message_picture(message):
@@ -64,7 +60,7 @@ def meme_bot_factory(token):
             image_bytes.seek(0)
             s3_helper.save_unprocessed_image(image_bytes.getvalue(), chat_id)
         logging.info("Photo successfully saved!")
-        bot.send_message(chat_id=chat_id, text="Got pic with id{}".format(photo_id), reply_to_message_id=message_id)
+        bot.send_message(chat_id=chat_id, text="Got the picture! (Kolyan's sentence)! Now send me some sticker! ", reply_to_message_id=message_id)
 
     @bot.message_handler(content_types=["sticker"])
     def on_message_sticker(message):
@@ -79,18 +75,25 @@ def meme_bot_factory(token):
                 mask_bytes.write(r)
                 mask = Image.open(mask_bytes)
                 logging.info("Sticker successfully downloaded!")
+                bot.send_message(chat_id=chat_id, text="Good choice!",
+                                 reply_to_message_id=message_id)
             except Exception as e:
+                bot.send_message(chat_id=chat_id, text="Something went wrong :(")
                 logging.exception(e)
                 return
 
             source = s3_helper.get_last_saved_source(chat_id)
             if not source:
                 logging.info("Source image to memefy not found!")
+                bot.send_message(chat_id=chat_id, text="You should send picture first :)",
+                                 reply_to_message_id=message_id)
                 return  # Handle source not found
 
             faces = s3_helper.get_faces_on_last_source(chat_id)
             if not faces:
                 logging.info("Faces to memefy not found!")
+                bot.send_message(chat_id=chat_id, text="I think picture does not contain any faces :(",
+                                 reply_to_message_id=message_id)
                 return  # Handle faces not found
 
             # mEmEs TiMe
