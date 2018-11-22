@@ -74,6 +74,23 @@ def get_faces_on_last_source(chat_id):
         return None
 
 
+def is_there_nudity_on_last_source(chat_id):
+    print("Detecting nudity...")
+    resp = rekognition.detect_moderation_labels(Image={
+        'S3Object': {
+            'Bucket': UNPROCESSED_IMAGES_BUCKET_NAME,
+            'Name': get_source_image_s3_name(chat_id),
+        }
+    },
+        MinConfidence=50.)
+    for label in resp['ModerationLabels']:
+        if 'Explicit Nudity' in [label['Name'], label['ParentName']]:
+            print("Nudity detected")
+            return True
+    print("There is no nudity")
+    return False
+
+
 if __name__ == '__main__':
     chat_id = "69420"
 
