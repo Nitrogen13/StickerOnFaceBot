@@ -17,8 +17,6 @@ class FaceBox:
 
 def outer_fit(source, mask, face_box):
     mask_width, mask_height = mask.size
-    print("mask_width: %s, mask_height: %s " % (mask_width, mask_height))
-    print("face_width: %s, face_height: %s " % (face_box.width, face_box.height))
     if mask_width > mask_height:
         height = face_box.height
         width = mask_width / mask_height * height
@@ -30,7 +28,6 @@ def outer_fit(source, mask, face_box):
         delta_len = (height - face_box.height) / 2
         horizontal_expand = False
 
-    print("delta_len: %d" % delta_len)
     delta_y = delta_len * math.sin(math.radians(face_box.roll))
     delta_x = delta_len * math.cos(math.radians(face_box.roll))
 
@@ -42,22 +39,19 @@ def outer_fit(source, mask, face_box):
         top = face_box.top - sign * delta_x
         left = face_box.left - sign * delta_y
 
-    print("width: %f, height: %f" % (top, left))
-    print("roll: %f" % face_box.roll)
-    print("dy: %f, dx: %f" % (delta_y, delta_x))
-    print("top: %f, left: %f" % (top, left))
     scaled_mask = mask.resize((int(width), int(height)), Image.ANTIALIAS).rotate(-face_box.roll, expand=1)
     source.paste(scaled_mask, (int(left), int(top)), scaled_mask)
 
 
 def memefy(source, mask, faces):
     print("Memefy the image...")
-
+    mask = mask.convert("RGBA")
+    source = source.convert("RGBA")
     boxes = [FaceBox(face, source.size[0], source.size[1]) for face in faces]
     for box in boxes:
         outer_fit(source, mask, box)
 
-    return source
+    return source.convert("RGB")
 
 
 if __name__ == '__main__':
