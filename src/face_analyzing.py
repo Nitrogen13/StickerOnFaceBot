@@ -110,9 +110,26 @@ def get_random_message(faces):
         max_age = int(max(max_ages))
         min_age = int(min(min_ages))
         avg_age = int(average(avg_ages))
-        phrases.append('Wow, %d beauties in the photo. Like!' % women)
-        phrases.append('What are %d guys doing in this photo?' % men)
-        phrases.append('I can see %d women and %d men in this photo, am I right?' % (women, men))
+
+        if women >= 2:
+            phrases.append('Wow, %d beauties in the photo. Like!' % women)
+        elif women == 1:
+            phrases.append('Only 1 girl in the photo, why?((')
+        else:
+            phrases.append('No girls, are you serious?')
+
+        if men >= 2:
+            phrases.append('What are %d guys doing in this photo?' % men)
+        elif men == 1:
+            phrases.append('Man, you are so lucky ;)')
+        else:
+            phrases.append('Girls\' party?')
+
+        if (men == 1) & (women == 1):
+            phrases.append('Are you just friends or... beloved???')
+        elif (men > 1) & (women > 1):
+            phrases.append('I can see %d women and %d men in this photo, am I right?' % (women, men))
+            phrases.append('%d women and %d men - party?' % (women, men))
         phrases.append('The oldest of you is %d years old, as I think' % max_age)
         phrases.append('The youngest of you is %d years old, right?' % min_age)
         phrases.append('I counted the average age among you, it is - %d' % avg_age)
