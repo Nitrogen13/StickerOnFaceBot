@@ -1,24 +1,53 @@
+import math
+
 from PIL import Image
+
+from src import s3_helper
+import tests
+
 
 class FaceBox:
     def __init__(self, face, source_width, source_height):
         self.left = int(face['BoundingBox']['Left'] * source_width)
         self.top = int(face['BoundingBox']['Top'] * source_height)
-        self.right = int((face['BoundingBox']['Left'] + face['BoundingBox']['Width']) * source_width)
-        self.bottom = int((face['BoundingBox']['Top'] + face['BoundingBox']['Height']) * source_height)
+        self.width = int(face['BoundingBox']['Width'] * source_width)
+        self.height = int(face['BoundingBox']['Height'] * source_height)
         self.roll = face['Pose']['Roll']
 
-    def width(self):
-        return self.right - self.left
 
-    def height(self):
-        return self.bottom - self.top
+def outer_fit(source, mask, face_box):
+    mask_width, mask_height = mask.size
+    print("mask_width: %s, mask_height: %s " % (mask_width, mask_height))
+    print("face_width: %s, face_height: %s " % (face_box.width, face_box.height))
+    if mask_width > mask_height:
+        height = face_box.height
+        width = mask_width / mask_height * height
+        delta_len = (width - face_box.width) / 2
+        horizontal_expand = True
+    else:
+        width = face_box.width
+        height = mask_height / mask_width * width
+        delta_len = (height - face_box.height) / 2
+        horizontal_expand = False
 
-    def size(self):
-        return self.width(), self.height()
+    print("delta_len: %d" % delta_len)
+    delta_y = delta_len * math.sin(math.radians(face_box.roll))
+    delta_x = delta_len * math.cos(math.radians(face_box.roll))
 
-    def coordinates(self):
-        return [self.left, self.top, self.right, self.bottom]
+    sign = 1 if face_box.roll > 0 else -1
+    if horizontal_expand:
+        top = face_box.top - sign * delta_y
+        left = face_box.left - sign * delta_x
+    else:
+        top = face_box.top - sign * delta_x
+        left = face_box.left - sign * delta_y
+
+    print("width: %f, height: %f" % (top, left))
+    print("roll: %f" % face_box.roll)
+    print("dy: %f, dx: %f" % (delta_y, delta_x))
+    print("top: %f, left: %f" % (top, left))
+    scaled_mask = mask.resize((int(width), int(height)), Image.ANTIALIAS).rotate(-face_box.roll, expand=1)
+    source.paste(scaled_mask, (int(left), int(top)), scaled_mask)
 
 
 def memefy(source, mask, faces):
@@ -26,33 +55,26 @@ def memefy(source, mask, faces):
 
     boxes = [FaceBox(face, source.size[0], source.size[1]) for face in faces]
     for box in boxes:
-        scaled_mask = mask.resize(box.size(), Image.ANTIALIAS).rotate(-box.roll, expand=1)
-        source.paste(scaled_mask, (box.left, box.top), scaled_mask)
+        outer_fit(source, mask, box)
 
     return source
 
 
 if __name__ == '__main__':
     # tests
+    test_chat_id = "test"
 
-    src_bytes = open("test_img/Vanya.jpg", 'rb')
-    mask = Image.open("test_img/sticker.webp")
+    for source_file_name, cached_faces in tests.sources.items():
+        print("Working on %s..." % source_file_name)
+        src_bytes = open("../tests/sources/%s" % source_file_name, 'rb')
+        mask = Image.open("../tests/masks/lmao.webp")
 
-    # memefier.save_unprocessed_image(src_bytes, "test")
-    # faces = memefier.get_faces(memefier.get_source_image_s3_name("test"))
-    # print("faces: %s" % faces)
+        if not cached_faces:
+            s3_helper.save_unprocessed_image(src_bytes, test_chat_id)
+            faces = s3_helper.get_faces_on_last_source(test_chat_id)
+            print("faces on %s : %s" % (source_file_name, faces))
+        else:
+            faces = cached_faces
 
-    # coordinates for Vanya.jpg
-    faces = [{'BoundingBox': {'Width': 0.16969697177410126, 'Height': 0.2545454502105713, 'Left': 0.38333332538604736,
-                              'Top': 0.21590909361839294},
-              'Landmarks': [{'Type': 'eyeLeft', 'X': 0.44117608666419983, 'Y': 0.31642162799835205},
-                            {'Type': 'eyeRight', 'X': 0.4994202256202698, 'Y': 0.3300350308418274},
-                            {'Type': 'nose', 'X': 0.45734497904777527, 'Y': 0.37112942337989807},
-                            {'Type': 'mouthLeft', 'X': 0.43496692180633545, 'Y': 0.4051054120063782},
-                            {'Type': 'mouthRight', 'X': 0.4843645989894867, 'Y': 0.41589558124542236}],
-              'Pose': {'Roll': 9.168045043945312, 'Yaw': -9.777241706848145, 'Pitch': -8.776867866516113},
-              'Quality': {'Brightness': 80.83344268798828, 'Sharpness': 95.54405975341797},
-              'Confidence': 99.99983215332031}]
-
-    res = memefy(Image.open(src_bytes), mask, faces)
-    res.save("test.jpg")
+        res = memefy(Image.open(src_bytes), mask, faces)
+        res.save("%s_processed.jpg" % source_file_name)
