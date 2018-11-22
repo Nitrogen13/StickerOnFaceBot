@@ -49,9 +49,12 @@ def meme_bot_factory(token):
             image_bytes.write(r)
             image_bytes.seek(0)
             s3_helper.save_unprocessed_image(image_bytes.getvalue(), chat_id)
-        print("Photo successfully saved!")
+        print("Photo successfully saved! Analyzing photo...")
 
-        print("Analyzing photo")
+        if s3_helper.is_there_nudity_on_last_source(chat_id):
+            bot.send_message(chat_id=chat_id, text="Shame on you!", reply_to_message_id=message_id)
+            return
+
         source = s3_helper.get_last_saved_source(chat_id)
         if not source:
             print("Source image to analyze not found!")
@@ -73,6 +76,26 @@ def meme_bot_factory(token):
         message_id = message.message_id
         sticker_id = message.sticker.file_id
         file = bot.get_file(sticker_id)
+
+        source = s3_helper.get_last_saved_source(chat_id)
+        if not source:
+            print("Source image to memefy not found!")
+            bot.send_message(chat_id=chat_id, text="You should send picture first :)",
+                             reply_to_message_id=message_id)
+            return  # Handle source not found
+
+        faces = s3_helper.get_faces_on_last_source(chat_id)
+
+        if not faces:
+            print("Faces to memefy not found!")
+            bot.send_message(chat_id=chat_id, text="I think your picture does not contain any faces :( Send another picture please :)")
+            return  # Handle faces not found
+
+        if s3_helper.is_there_nudity_on_last_source(chat_id):
+            bot.send_message(chat_id=chat_id,
+                             text="I will not add any sticker to your picture! Send another picture please...")
+            return
+
         with io.BytesIO() as mask_bytes:
             try:
                 r = bot.download_file(file.file_path)
@@ -85,22 +108,6 @@ def meme_bot_factory(token):
                 bot.send_message(chat_id=chat_id, text="Something went wrong :(")
                 print(e)
                 return
-
-            source = s3_helper.get_last_saved_source(chat_id)
-
-            if not source:
-                print("Source image to memefy not found!")
-                bot.send_message(chat_id=chat_id, text="You should send picture first :)",
-                                 reply_to_message_id=message_id)
-                return  # Handle source not found
-
-            faces = s3_helper.get_faces_on_last_source(chat_id)
-
-            if not faces:
-                print("Faces to memefy not found!")
-                bot.send_message(chat_id=chat_id, text="I think picture does not contain any faces :(",
-                                 reply_to_message_id=message_id)
-                return  # Handle faces not found
 
             # mEmEs TiMe
             processed = image_processing.memefy(source, mask, faces)
@@ -116,5 +123,6 @@ def meme_bot_factory(token):
         url += "?t={}".format(time.time())
         print(url)
         bot.send_photo(chat_id=chat_id, photo=url)
+        bot.send_message(chat_id=chat_id, text="You can continue sending me stickers or you can upload new picture!")
 
     return bot
