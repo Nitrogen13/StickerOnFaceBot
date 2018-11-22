@@ -8,7 +8,7 @@ import logging
 
 from PIL import Image
 
-from src import image_processing, s3_helper
+from src import image_processing, s3_helper, face_analyzing
 
 logger = telebot.logger
 logger.setLevel(logging.INFO)
@@ -38,19 +38,42 @@ def meme_bot_factory(token):
 
     @bot.message_handler(content_types=["photo"])
     def on_message_picture(message):
-        print("Got pic")
-        chat_id = message.chat.id
+        print("Got pic for beard")
+        chat_id = message.chat_id
         message_id = message.message_id
         photo = message.photo
-        photo_id = photo[-1].file_id
+        photo_id = photo[len(photo) - 1].file_id
         file = bot.get_file(photo_id)
         with io.BytesIO() as image_bytes:
-            r = bot.download_file(file.file_path)
-            image_bytes.write(r)
+            file.download(out=image_bytes)
             image_bytes.seek(0)
             s3_helper.save_unprocessed_image(image_bytes.getvalue(), chat_id)
         print("Photo successfully saved!")
-        bot.send_message(chat_id=chat_id, text="Got the picture! (Kolyan's sentence)! Now send me some sticker! ", reply_to_message_id=message_id)
+
+        print("Analyzing photo")
+        with io.BytesIO() as mask_bytes:
+            try:
+                file.download(out=mask_bytes)
+                mask = Image.open(mask_bytes)
+                print("Photo was successfully downloaded!")
+            except Exception as e:
+                print(e)
+                return
+
+            source = s3_helper.get_last_saved_source(chat_id)
+            if not source:
+                print("Source image to analyze not found!")
+                return  # Handle source not found
+
+            faces = s3_helper.get_faces_on_last_source(chat_id)
+            if not faces:
+                bot.send_message(chat_id=chat_id, text="I cannot recognize any face :(", reply_to_message_id=message_id)
+                return  # Handle faces not found
+
+        message = face_analyzing.get_random_message(faces)
+        bot.send_message(chat_id=chat_id, text="Got the picture!")
+        bot.send_message(chat_id=chat_id, text=message, reply_to_message_id=message_id)
+        bot.send_message(chat_id=chat_id, text="Now send me some sticker!")
 
     @bot.message_handler(content_types=["sticker"])
     def on_message_sticker(message):
