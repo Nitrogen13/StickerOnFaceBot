@@ -1,3 +1,4 @@
 pillow
 pyTelegramBotAPI
 boto3
+numpy

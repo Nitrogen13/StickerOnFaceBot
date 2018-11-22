@@ -5,6 +5,6 @@ To create a lambda package, install libraries in `./lib`:
 
 And package everything as zip:
 
-`zip -9 -r package lib lambda_function.py key.txt src`
+`zip -9 -r package lib lambda_function.py key.txt src setup_webhook.py`
 
 Upload package.zip to AWS lambda.
