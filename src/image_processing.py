@@ -2,9 +2,6 @@ import math
 
 from PIL import Image
 
-from src import s3_helper
-import tests
-
 
 class FaceBox:
     def __init__(self, face, source_width, source_height):
@@ -52,23 +49,3 @@ def memefy(source, mask, faces):
         outer_fit(source, mask, box)
 
     return source.convert("RGB")
-
-
-if __name__ == '__main__':
-    # tests
-    test_chat_id = "test"
-
-    for source_file_name, cached_faces in tests.sources.items():
-        print("Working on %s..." % source_file_name)
-        src_bytes = open("../tests/sources/%s" % source_file_name, 'rb')
-        mask = Image.open("../tests/masks/lmao.webp")
-
-        if not cached_faces:
-            s3_helper.save_unprocessed_image(src_bytes, test_chat_id)
-            faces = s3_helper.get_faces_on_last_source(test_chat_id)
-            print("faces on %s : %s" % (source_file_name, faces))
-        else:
-            faces = cached_faces
-
-        res = memefy(Image.open(src_bytes), mask, faces)
-        res.save("%s_processed.jpg" % source_file_name)
