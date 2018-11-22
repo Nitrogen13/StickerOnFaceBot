@@ -36,6 +36,12 @@ def meme_bot_factory(token):
     def start(message):
         bot.send_message(chat_id=message.chat.id, text='Hello {}! Send me some picture, that contains faces and I will memify it!'.format(message.from_user.first_name))
 
+    @bot.message_handler(commands=["kek"])
+    def start(message):
+        bot.send_message(chat_id=message.chat.id,
+                         text='Coming soon...'.format(
+                             message.from_user.first_name))
+
     @bot.message_handler(content_types=["photo"])
     def on_message_picture(message):
         print("Got pic")

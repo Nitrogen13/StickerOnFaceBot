@@ -28,7 +28,7 @@ def outer_fit(source, mask, face_box):
     delta_y = delta_len * math.sin(math.radians(face_box.roll))
     delta_x = delta_len * math.cos(math.radians(face_box.roll))
 
-    sign = 1 if face_box.roll > 0 else -1
+    sign = 1 if math.fabs(face_box.roll ) < 90 else -1
     if horizontal_expand:
         top = face_box.top - sign * delta_y
         left = face_box.left - sign * delta_x
@@ -49,3 +49,4 @@ def memefy(source, mask, faces):
         outer_fit(source, mask, box)
 
     return source.convert("RGB")
+
