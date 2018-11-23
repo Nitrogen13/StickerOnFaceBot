@@ -37,10 +37,49 @@ def meme_bot_factory(token):
         bot.send_message(chat_id=message.chat.id, text='Hello {}! Send me some picture, that contains faces and I will memify it!'.format(message.from_user.first_name))
 
     @bot.message_handler(commands=["kek"])
-    def start(message):
-        bot.send_message(chat_id=message.chat.id,
-                         text='Coming soon...'.format(
-                             message.from_user.first_name))
+    def on_kek(message):
+        print("Got kek")
+        chat_id = message.chat.id
+        message_id = message.message_id
+
+        source = s3_helper.get_last_saved_source(chat_id)
+        if not source:
+            print("Source image to memefy not found!")
+            bot.send_message(chat_id=chat_id, text="You should send picture first :)",
+                             reply_to_message_id=message_id)
+            return  # Handle source not found
+
+        faces = s3_helper.get_faces_on_last_source(chat_id)
+
+        if not faces:
+            print("Faces to memefy not found!")
+            bot.send_message(chat_id=chat_id,
+                             text="I think your picture does not contain any faces :( Send another picture please :)")
+            return  # Handle faces not found
+
+        if s3_helper.is_there_nudity_on_last_source(chat_id):
+            bot.send_message(chat_id=chat_id,
+                             text="I will not add any sticker to your picture! Send another picture please...")
+            return
+
+
+        # kEk TiMe
+        results = image_processing.kekefy(source, faces)
+
+        for image_id, image in enumerate(results):
+            # Save result to s3
+            with io.BytesIO() as image_bytes:
+                print("Saving processed image...")
+                image.save(image_bytes, format='JPEG')
+                url = s3_helper.save_processed_image(image_bytes.getvalue(), chat_id, image_id)
+                print("Image saved at {}".format(url))
+
+            # url += "?t=%s" % (int(time.time()))
+            url += "?t={}".format(time.time())
+            print(url)
+            bot.send_photo(chat_id=chat_id, photo=url)
+
+        bot.send_message(chat_id=chat_id, text="You can continue sending me stickers or you can upload new picture!")
 
     @bot.message_handler(content_types=["photo"])
     def on_message_picture(message):
