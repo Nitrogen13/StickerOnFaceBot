@@ -94,7 +94,7 @@ def get_random_message(faces):
         phrases.append('C\'mon guys, do you want me to analyze all of you? (I will not anyway)')
         phrases.append('Wow, it\'ll take some time to recognize all of you')
         phrases.append('%d people in the photo, hmmm..' % len(faces))
-        phrases.append('I\'ll be hard to analyze %d people, but I\'ll try' % len(faces))
+        phrases.append('It\'ll be hard to analyze %d people, but I\'ll try' % len(faces))
         # Age, Sex
         max_ages, min_ages, avg_ages, men, women = [], [], [], 0, 0
         for face in faces:

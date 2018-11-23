@@ -40,7 +40,7 @@ def save_processed_image(image, chat_id, image_id=None):
     print("Upload processed image...")
     key = get_processed_image_s3_name(chat_id)
     if image_id:
-        key += "_%d" % image_id
+        key = "%d_%s" % (image_id, key)
     processed_bucket.put_object(Body=image, Key=key, ACL="public-read")
     return "https://%s.s3.amazonaws.com/%s" % (PROCESSED_IMAGES_BUCKET_NAME, key)
 

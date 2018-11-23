@@ -71,7 +71,7 @@ def meme_bot_factory(token):
             with io.BytesIO() as image_bytes:
                 print("Saving processed image...")
                 image.save(image_bytes, format='JPEG')
-                url = s3_helper.save_processed_image(image_bytes.getvalue(), chat_id, image_id)
+                url = s3_helper.save_processed_image(image_bytes.getvalue(), chat_id, image_id + 1)
                 print("Image saved at {}".format(url))
 
             # url += "?t=%s" % (int(time.time()))
@@ -79,7 +79,7 @@ def meme_bot_factory(token):
             print(url)
             bot.send_photo(chat_id=chat_id, photo=url)
 
-        bot.send_message(chat_id=chat_id, text="You can continue sending me stickers or you can upload new picture!")
+        bot.send_message(chat_id=chat_id, text="You can continue sending me stickers or you can upload new picture! \nAlso try /kek 😉")
 
     @bot.message_handler(content_types=["photo"])
     def on_message_picture(message):
@@ -133,7 +133,7 @@ def meme_bot_factory(token):
 
         if not faces:
             print("Faces to memefy not found!")
-            bot.send_message(chat_id=chat_id, text="I think your picture does not contain any faces :( Send another picture please :)")
+            bot.send_message(chat_id=chat_id, text="I think your picture does not contain any faces 🤔 Send another picture please :)")
             return  # Handle faces not found
 
         if s3_helper.is_there_nudity_on_last_source(chat_id):
@@ -168,6 +168,6 @@ def meme_bot_factory(token):
         url += "?t={}".format(time.time())
         print(url)
         bot.send_photo(chat_id=chat_id, photo=url)
-        bot.send_message(chat_id=chat_id, text="You can continue sending me stickers or you can upload new picture!")
+        bot.send_message(chat_id=chat_id, text="You can continue sending me stickers or you can upload new picture! \nAlso try /kek 😉")
 
     return bot
